@@ -8,12 +8,15 @@ import {
     TextField,
     Alert
 } from '@mui/material';
-
+import { submitFinalApplication } from "../../features/personalInfo/personalInfoSlice"
+import { useDispatch } from 'react-redux';
+import { useNavigate } from 'react-router-dom';
 const PaymentSubmission = () => {
+    const navigate = useNavigate();
     const [showSBIInput, setShowSBIInput] = useState(false);
     const [sbiRefNo, setSbiRefNo] = useState('');
     const [submitted, setSubmitted] = useState(false);
-
+    const dispatch = useDispatch();
     const handleConfirmPay = () => {
         alert('Payment Process Initiated!');
     };
@@ -27,9 +30,19 @@ const PaymentSubmission = () => {
     const handleSBISubmit = () => {
         if (sbiRefNo.trim() !== '') {
             setSubmitted(true);
-            console.log('SBI Reference No:', sbiRefNo);
+            dispatch(submitFinalApplication());
         }
     };
+
+    const handleSubmit = async () => {
+        try {
+            await dispatch(submitFinalApplication()).unwrap();
+            navigate('/thankyou');
+        } catch (error) {
+            console.error("Submission failed:", error);
+        }
+    };
+
 
     return (
         <Box>
@@ -203,6 +216,17 @@ const PaymentSubmission = () => {
                     Confirm & Pay ₹550
                 </Button>
             </Box>
+            <Box sx={{ display: 'flex', justifyContent: 'flex-end', mt: 4 }}>
+                <Button
+                    variant="contained"
+                    color="success"
+                    sx={{ fontWeight: 600 }}
+                    onClick={handleSubmit}
+                >
+                    Final Submit
+                </Button>
+            </Box>
+
         </Box>
     );
 };

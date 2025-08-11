@@ -14,6 +14,8 @@ import Settings from './pages/Settings';
 import Registration from './pages/User/Registration';
 import Login from './pages/User/UserLogin/Login';
 import Register from './pages/User/UserLogin/Register';
+import ThankYouPage from './pages/User/ThankYouPage';
+import Allstudents from './pages/User/Allstudents';
 
 const App = ({ mode, toggleColorMode }) => (
   <>
@@ -37,6 +39,8 @@ const App = ({ mode, toggleColorMode }) => (
       <Route path="/" element={<Login />} />
       <Route path="/register" element={<Register />} />
       <Route path="/registration" element={<Registration />} />
+      <Route path='/thankyou' element={<ThankYouPage />} />
+      <Route path='/all-student' element={<Allstudents />} />
     </Routes>
   </>
 );

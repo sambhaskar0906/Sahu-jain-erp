@@ -19,7 +19,7 @@ import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns';
 import { Visibility, VisibilityOff } from '@mui/icons-material';
 import { IconButton, InputAdornment } from '@mui/material';
 import { useDispatch, useSelector } from 'react-redux';
-import {registerCandidate} from "../../../features/user/userSlice"
+import {registerCandidate,sendVerificationCode} from "../../../features/user/userSlice"
 
 const Register = () => {
     const [otpSent, setOtpSent] = useState(false);
@@ -72,14 +72,20 @@ const Register = () => {
 });
 
 
-    const handleSendOtp = () => {
-        if (formik.values.email && !formik.errors.email) {
-            setOtpSent(true);
-            alert('OTP sent to ' + formik.values.email);
-        }
-    };
-console.log("Formik values:", formik.values);
-console.log("Formik errors:", formik.errors);
+    const handleSendOtp = async () => {
+  if (formik.values.email && !formik.errors.email) {
+    const result = await dispatch(sendVerificationCode(formik.values.email));
+
+    if (sendVerificationCode.fulfilled.match(result)) {
+      setOtpSent(true);
+      alert('✅ OTP sent to ' + formik.values.email);
+    } else {
+      alert(result.payload || '❌ Failed to send OTP');
+    }
+  }
+};
+
+
 
     return (
         <Box

@@ -6,6 +6,19 @@ import axios from '../../utils/axios';
 // --- Thunks ---
 
 
+export const fetchAllStudents = createAsyncThunk(
+  "students/fetchAllStudents",
+  async (_, { rejectWithValue }) => {
+    try {
+      const response = await axios.get("/personalInfo/all-students");
+      return response.data.data; // Adjust if API wraps inside { data: ... }
+    } catch (err) {
+      return rejectWithValue(err.response?.data || err.message);
+    }
+  }
+);
+
+
 export const submitPersonalInfo = createAsyncThunk(
   'application/submitPersonalInfo',
   async (formValues, { rejectWithValue }) => {
@@ -20,20 +33,20 @@ export const submitPersonalInfo = createAsyncThunk(
           }
         } else if (key === 'candidatePhoto' || key === 'candidateSignature') {
           const file = formValues[key];
-if (file && file instanceof File) {
-  formData.append(
-    key === 'candidatePhoto' ? 'candidate_photo' : 'candidate_signature',
-    file
-  );
-} else {
-  console.warn(`${key} is not a valid File. Skipping.`);
-}
+          if (file && file instanceof File) {
+            formData.append(
+              key === 'candidatePhoto' ? 'candidate_photo' : 'candidate_signature',
+              file
+            );
+          } else {
+            console.warn(`${key} is not a valid File. Skipping.`);
+          }
 
         } else {
           formData.append(key, formValues[key]);
         }
       }
-        
+
 
       const response = await axios.post('/personalInfo/create', formData, {
         headers: { 'Content-Type': 'multipart/form-data' },
@@ -61,11 +74,12 @@ export const submitAcademicInfo = createAsyncThunk(
 
 export const submitSubjectInfo = createAsyncThunk(
   'application/submitSubjectInfo',
-  async ({ majorSubject, minorSubject }, { rejectWithValue }) => {
+  async ({ semester, majorSubject, minorSubject }, { rejectWithValue }) => {
     try {
       const response = await axios.post('/personalInfo/register/subject-info', {
         majorSubject,
         minorSubject,
+        semester
       });
       return response.data;
     } catch (err) {
@@ -78,7 +92,7 @@ export const submitFinalApplication = createAsyncThunk(
   'application/submitFinalApplication',
   async (_, { rejectWithValue }) => {
     try {
-      const response = await axios.post('/register/submit');
+      const response = await axios.post('/personalInfo/register/submit');
       return response.data;
     } catch (err) {
       return rejectWithValue(err.response?.data || err.message);
@@ -110,6 +124,7 @@ const applicationSlice = createSlice({
     subjectInfo: null,
     isSubmitted: false,
     status: null,
+    students: [],
   },
   reducers: {
     clearApplicationState: (state) => {
@@ -120,10 +135,24 @@ const applicationSlice = createSlice({
       state.subjectInfo = null;
       state.isSubmitted = false;
       state.status = null;
+      state.students = [];
     },
   },
   extraReducers: (builder) => {
     builder
+      // 🔹 Fetch All Students
+      .addCase(fetchAllStudents.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(fetchAllStudents.fulfilled, (state, action) => {
+        state.loading = false;
+        state.students = action.payload;
+      })
+      .addCase(fetchAllStudents.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload;
+      })
       // Personal Info
       .addCase(submitPersonalInfo.pending, (state) => {
         state.loading = true;

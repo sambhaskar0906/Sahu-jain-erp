@@ -1,4 +1,4 @@
-import {createSlice,createAsyncThunk} from '@reduxjs/toolkit';
+import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
 import axios from "../../utils/axios";
 export const registerCandidate = createAsyncThunk(
   'candidate/register',
@@ -18,7 +18,7 @@ export const loginCandidate = createAsyncThunk(
     console.log("API call started with", { applicationId, password })
     try {
       const res = await axios.post('candidate/login', { applicationId, password });
-            const token = res.data?.data?.token;
+      const token = res.data?.data?.token;
 
       if (token) {
         localStorage.setItem("token", token); // ✅ Save token here
@@ -28,17 +28,35 @@ export const loginCandidate = createAsyncThunk(
       }
       return res.data.data;
     } catch (err) {
-        console.log("API error:", err); 
+      console.log("API error:", err);
       return rejectWithValue(err.response?.data?.message || 'Login failed');
     }
   }
 );
+// Thunk to send OTP
+export const sendVerificationCode = createAsyncThunk(
+  'candidate/sendVerificationCode',
+  async (email, { rejectWithValue }) => {
+    try {
+      const res = await axios.post('/candidate/send-Otp', { email });
+      return res.data.message;
+    } catch (err) {
+      return rejectWithValue(err.response?.data?.message || 'Failed to send OTP');
+    }
+  }
+);
+
 const initialState = {
   loading: false,
   error: null,
   user: null,
   token: null,
   success: false,
+  otpStatus: {
+    loading: false,
+    success: false,
+    error: null,
+  }
 };
 const candidateSlice = createSlice({
   name: 'candidate',
@@ -77,12 +95,30 @@ const candidateSlice = createSlice({
       .addCase(loginCandidate.fulfilled, (state, action) => {
         state.loading = false;
         state.user = action.payload.user;
+        state.personalInfo = action.payload.personalInfo; // ✅ add this
+        state.academicInfo = action.payload.academicInfo; // optional
+        state.subjectInfo = action.payload.subjectInfo;   // op
         state.token = action.payload.token;
         state.success = true;
       })
       .addCase(loginCandidate.rejected, (state, action) => {
         state.loading = false;
         state.error = action.payload;
+      })
+      .addCase(sendVerificationCode.pending, (state) => {
+        state.otpStatus.loading = true;
+        state.otpStatus.success = false;
+        state.otpStatus.error = null;
+      })
+      .addCase(sendVerificationCode.fulfilled, (state, action) => {
+        state.otpStatus.loading = false;
+        state.otpStatus.success = true;
+        state.otpStatus.error = null;
+      })
+      .addCase(sendVerificationCode.rejected, (state, action) => {
+        state.otpStatus.loading = false;
+        state.otpStatus.success = false;
+        state.otpStatus.error = action.payload;
       });
   },
 });

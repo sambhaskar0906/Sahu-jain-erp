@@ -34,21 +34,21 @@ const Login = () => {
             password: Yup.string().required('Password is required'),
         }),
         onSubmit: async (values) => {
-    const result = await dispatch(
-      loginCandidate({
-        applicationId: values.applicationId,
-        password: values.password,
-      })
-    );
+            const result = await dispatch(
+                loginCandidate({
+                    applicationId: values.applicationId,
+                    password: values.password,
+                })
+            );
 
-    if (loginCandidate.fulfilled.match(result)) {
-      alert("Login successful!");
-      navigate("/registration"); 
-    } else {
-      alert(result.payload || "Invalid credentials");
-    }
-  },
-});
+            if (loginCandidate.fulfilled.match(result)) {
+                alert("Login successful!");
+                navigate("/registration");
+            } else {
+                alert(result.payload || "Invalid credentials");
+            }
+        },
+    });
 
     const handleClickShowPassword = () => {
         setShowPassword(!showPassword);

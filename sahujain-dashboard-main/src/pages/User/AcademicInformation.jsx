@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
     Grid,
     TextField,
@@ -17,9 +17,11 @@ const educationLevels = ['High School', 'Intermediate', 'Graduation'];
 const boards = ['UP Board', 'CBSE', 'ICSE', 'Other'];
 const scoreTypes = ['Percentage', 'CGPA'];
 
-const AcademicInformation = () => {
+const AcademicInformation = ({ onNext }) => {
     const dispatch = useDispatch();
     const { loading } = useSelector((state) => state.personalInfo);
+    const academicInfo = useSelector((state) => state.user.academicInfo);
+
 
     const [academicData, setAcademicData] = useState(
         educationLevels.map((level) => ({
@@ -63,10 +65,42 @@ const AcademicInformation = () => {
         }
         setAcademicData(updated);
     };
+    useEffect(() => {
+        if (academicInfo?.academicRecords?.length) {
+            // Map backend records to UI format
+            const mapped = educationLevels.map((level) => {
+                const record = academicInfo.academicRecords.find(r => r.level === level);
+                if (!record) return {
+                    level,
+                    board: '',
+                    subject: '',
+                    yearOfPassing: '',
+                    scoreType: 'Percentage',
+                    marksObtained: '',
+                    maximumMarks: '',
+                    percentage: '',
+                    cgpa: ''
+                };
 
+                return {
+                    level,
+                    board: record.board || '',
+                    subject: record.subject || '',
+                    yearOfPassing: record.yearOfPassing || '',
+                    scoreType: record.scoreType || 'Percentage',
+                    marksObtained: record.marksObtained || '',
+                    maximumMarks: record.maximumMarks || '',
+                    percentage: record.percentage || '',
+                    cgpa: record.cgpa || ''
+                };
+            });
+
+            setAcademicData(mapped);
+        }
+    }, [academicInfo]);
     const handleSubmit = () => {
-        console.log('Submitting:', academicData);
         dispatch(submitAcademicInfo(academicData));
+        onNext();
     };
 
     return (
@@ -144,7 +178,7 @@ const AcademicInformation = () => {
                         <Grid size={{ xs: 12, sm: 3 }}>
                             <TextField
                                 fullWidth
-                                label="yearOfPassing of Passing"
+                                label="Passing of Passing"
                                 type="number"
                                 variant="outlined"
                                 size="small"
@@ -175,7 +209,7 @@ const AcademicInformation = () => {
                                 <Grid size={{ xs: 12, sm: 3 }}>
                                     <TextField
                                         fullWidth
-                                        label="Marks marksObtained"
+                                        label="Marks Obtained"
                                         type="number"
                                         variant="outlined"
                                         size="small"
@@ -189,7 +223,7 @@ const AcademicInformation = () => {
                                 <Grid size={{ xs: 12, sm: 3 }}>
                                     <TextField
                                         fullWidth
-                                        label="maximumMarksimum Marks"
+                                        label="Maximum Marks"
                                         type="number"
                                         variant="outlined"
                                         size="small"

@@ -117,9 +117,9 @@ const Registration = () => {
 
                     {/* Step Content */}
                     <Box sx={{ p: isMobile ? 2 : 4 }}>
-                        {activeStep === 0 && <PersonalDetails />}
-                        {activeStep === 1 && <AcademicInformation />}
-                        {activeStep === 2 && <SelectSubject />}
+                        {activeStep === 0 && <PersonalDetails onNext={handleNext} />}
+                        {activeStep === 1 && <AcademicInformation onNext={handleNext} />}
+                        {activeStep === 2 && <SelectSubject onNext={handleNext} />}
                         {activeStep === 3 && <PaymentSubmission />}
 
                         {/* Navigation Buttons */}
@@ -149,12 +149,8 @@ const Registration = () => {
                                     Next
                                 </Button>
                             ) : (
-                                <Button
-                                    variant="contained"
-                                    color="success"
-                                    sx={{ fontWeight: 600 }}
-                                >
-                                    Submit
+                                <Button>
+
                                 </Button>
                             )}
                         </Box>

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useFormik } from 'formik';
 import * as Yup from 'yup';
 import {
@@ -18,7 +18,7 @@ import { Person, Email, Phone, CalendarToday, Fingerprint, HowToVote } from '@mu
 import CategoryIcon from '@mui/icons-material/Category';
 import FamilyRestroomIcon from '@mui/icons-material/FamilyRestroom';
 import HomeIcon from '@mui/icons-material/Home';
-import { useDispatch } from 'react-redux';
+import { useDispatch, useSelector } from 'react-redux';
 import { submitPersonalInfo } from "../../features/personalInfo/personalInfoSlice"
 const genders = ['Male', 'Female', 'Other'];
 const castes = ['General', 'OBC', 'SC', 'ST'];
@@ -26,8 +26,11 @@ const categories = ['None', 'PWD', 'EWS', 'Ex-Serviceman'];
 const nationalities = ['Indian', 'Other'];
 const religions = ['Hindu', 'Muslim', 'Christian', 'Sikh', 'Other'];
 const weightageOptions = ['Yes', 'No'];
+const maritalStatus = ['Single', 'Married', 'Divorced', 'Winowed', 'Separated'];
 
 const validationSchema = Yup.object().shape({
+    UniversityRegNum: Yup.string().required('University Registration Number is required'),
+    UniversityEnrNum: Yup.string(),
     firstName: Yup.string().required('First Name is required'),
     email: Yup.string().email('Invalid email').required('Email is required'),
     mobileNumber: Yup.string()
@@ -40,6 +43,7 @@ const validationSchema = Yup.object().shape({
     gender: Yup.string().required('Gender is required'),
     nationality: Yup.string().required('Nationality is required'),
     caste: Yup.string().required('Caste is required'),
+    maritalStatus: Yup.string().required('Marital Status is required'),
     permanentAddress: Yup.object().shape({
         address: Yup.string().required('Permanent Address is required'),
         city: Yup.string().required('City is required'),
@@ -88,22 +92,29 @@ const validationSchema = Yup.object().shape({
 
 });
 
-const PersonalDetails = () => {
+const PersonalDetails = ({ onNext }) => {
     const [otpSent, setOtpSent] = useState(false);
     const [sameAsPermanent, setSameAsPermanent] = useState(false);
     const dispatch = useDispatch();
+    const user = useSelector((state) => state.user.user);
+    const personalInfo = useSelector((state) => state.user.personalInfo);
+
+
     const formik = useFormik({
         initialValues: {
+            UniversityRegNum: '',
+            UniversityEnrNum: '',
             firstName: '',
             middleName: '',
             lastName: '',
-            email: '',
+            email: user?.email || '',
             mobileNumber: '',
             whatsappNumber: '',
-            dob: '',
+            dob: user?.dob || '',
             gender: '',
             nationality: '',
             caste: '',
+            maritalStatus: '',
             specialCategory: '',
             religion: '',
             aadharNumber: '',
@@ -131,10 +142,93 @@ const PersonalDetails = () => {
         onSubmit: (values) => {
 
             dispatch(submitPersonalInfo(values));
-
+            onNext();
         }
     });
+    useEffect(() => {
+        console.log('User data:', user);
+        console.log('Personal info:', personalInfo);
+        // ... rest of your useEffect code
+    }, [user, personalInfo]);
+    useEffect(() => {
+        if (personalInfo) {
+            // Format date to YYYY-MM-DD for date input
+            const formattedDob = personalInfo.dob ?
+                new Date(personalInfo.dob).toISOString().split('T')[0] :
+                '';
 
+            formik.setValues({
+                UniversityRegNum: personalInfo.UniversityRegNum || '',
+                UniversityEnrNum: personalInfo.UniversityEnrNum || '',
+                firstName: personalInfo.firstName || '',
+                middleName: personalInfo.middleName || '',
+                lastName: personalInfo.lastName || '',
+                email: personalInfo.email || user?.email || '',
+                mobileNumber: personalInfo.mobileNumber?.toString() || '',
+                whatsappNumber: personalInfo.whatsappNumber?.toString() || '',
+                dob: formattedDob,
+                gender: personalInfo.gender || '',
+                nationality: personalInfo.nationality || '',
+                caste: personalInfo.caste || '',
+                maritalStatus: personalInfo.maritalStatus || '',
+                specialCategory: personalInfo.specialCategory || '',
+                religion: personalInfo.religion || '',
+                aadharNumber: personalInfo.aadharNumber?.toString() || '',
+                voterId: personalInfo.voterId || '',
+                weightageClaimed: personalInfo.weightageClaimed || '',
+                permanentAddress: {
+                    address: personalInfo.permanentAddress?.address || personalInfo.permanentAddress?.Paddress || '',
+                    city: personalInfo.permanentAddress?.city || personalInfo.permanentAddress?.Pcity || '',
+                    state: personalInfo.permanentAddress?.state || personalInfo.permanentAddress?.Pstate || '',
+                    pin: personalInfo.permanentAddress?.pin?.toString() || personalInfo.permanentAddress?.Ppin?.toString() || ''
+                },
+                temporaryAddress: {
+                    address: personalInfo.temporaryAddress?.address || personalInfo.temporaryAddress?.Taddress || '',
+                    city: personalInfo.temporaryAddress?.city || personalInfo.temporaryAddress?.Tcity || '',
+                    state: personalInfo.temporaryAddress?.state || personalInfo.temporaryAddress?.Tstate || '',
+                    pin: personalInfo.temporaryAddress?.pin?.toString() || personalInfo.temporaryAddress?.Tpin?.toString() || ''
+                },
+                fathersName: personalInfo.fathersName || '',
+                mothersName: personalInfo.mothersName || '',
+                parentsMobile: personalInfo.parentsMobile?.toString() || '',
+                candidatePhoto: null, // Handle separately
+                candidateSignature: null // Handle separately
+            });
+
+            // Set same as permanent if addresses match
+            const permAddress = personalInfo.permanentAddress;
+            const tempAddress = personalInfo.temporaryAddress;
+            if (permAddress && tempAddress) {
+                const isSameAddress =
+                    (permAddress.address || permAddress.Paddress) === (tempAddress.address || tempAddress.Taddress) &&
+                    (permAddress.city || permAddress.Pcity) === (tempAddress.city || tempAddress.Tcity) &&
+                    (permAddress.state || permAddress.Pstate) === (tempAddress.state || tempAddress.Tstate) &&
+                    (permAddress.pin || permAddress.Ppin) === (tempAddress.pin || tempAddress.Tpin);
+
+                setSameAsPermanent(isSameAddress);
+            }
+        } else if (user?.email) {
+            // At least set the email if only user data is available
+            formik.setFieldValue('email', user.email);
+            if (user.dob) {
+                const formattedDate = new Date(user.dob).toISOString().split('T')[0];
+                formik.setFieldValue('dob', formattedDate);
+            }
+        }
+    }, [user, personalInfo]);
+
+    // Handle file display for existing files
+    const [photoUrl, setPhotoUrl] = useState('');
+    const [signatureUrl, setSignatureUrl] = useState('');
+
+    useEffect(() => {
+        if (personalInfo?.candidate_photo) {
+            setPhotoUrl(personalInfo.candidate_photo);
+        }
+        if (personalInfo?.candidate_signature) {
+            setSignatureUrl(personalInfo.candidate_signature);
+        }
+    }, [personalInfo]);
     const handleSameAsPermanent = (checked) => {
         setSameAsPermanent(checked);
         if (checked) {
@@ -152,6 +246,68 @@ const PersonalDetails = () => {
     return (
         <form onSubmit={formik.handleSubmit}>
             <Grid container spacing={3}>
+                {/* Univerisity Registration Details */}
+                <Grid size={{ xs: 12 }}>
+                    <Stack
+                        direction="row"
+                        alignItems="center"
+                        spacing={1}
+                        sx={{
+                            backgroundColor: '#c5cae9',
+                            borderLeft: '6px solid #1a237e',
+                            borderRadius: 1,
+                            px: 2,
+                            py: 1,
+                            mb: 2,
+                        }}
+                    >
+                        <Person sx={{ color: '#1a237e' }} />
+                        <Typography
+                            variant="h6"
+                            sx={{
+                                fontWeight: 700,
+                                color: '#1a237e',
+                                textTransform: 'uppercase',
+                                letterSpacing: 0.5,
+                            }}
+                        >
+                            University Registration Details
+                        </Typography>
+                    </Stack>
+                    <Divider sx={{ mb: 3 }} />
+                </Grid>
+
+                <Grid size={{ xs: 12, sm: 6 }}>
+                    <TextField
+                        fullWidth
+                        name="UniversityRegNum"
+                        label="University Registration Number*"
+                        variant="outlined"
+                        size="small"
+                        value={formik.values.UniversityRegNum}
+                        onChange={formik.handleChange}
+                        onBlur={formik.handleBlur}
+                        error={formik.touched.UniversityRegNum && Boolean(formik.errors.UniversityRegNum)}
+                        helperText={formik.touched.UniversityRegNum && formik.errors.UniversityRegNum}
+                    />
+                </Grid>
+
+                <Grid size={{ xs: 12, sm: 6 }}>
+                    <TextField
+                        fullWidth
+                        name="UniversityEnrNum"
+                        label="University Enrollment Number*"
+                        variant="outlined"
+                        size="small"
+                        value={formik.values.UniversityEnrNum}
+                        onChange={formik.handleChange}
+                        onBlur={formik.handleBlur}
+                        error={formik.touched.UniversityEnrNum && Boolean(formik.errors.UniversityEnrNum)}
+                        helperText={formik.touched.UniversityEnrNum && formik.errors.UniversityEnrNum}
+                    />
+                </Grid>
+
+
                 {/* Personal Information Section */}
                 <Grid size={{ xs: 12 }}>
                     <Stack
@@ -223,7 +379,7 @@ const PersonalDetails = () => {
                     />
                 </Grid>
 
-                <Grid size={{ xs: 12, sm: 6 }} mb={1}>
+                <Grid size={{ xs: 12, sm: 4 }} mb={1}>
                     <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                         <TextField
                             fullWidth
@@ -233,18 +389,14 @@ const PersonalDetails = () => {
                             variant="outlined"
                             size="small"
                             InputProps={{
-                                startAdornment: (
-                                    <Email color="action" sx={{ mr: 1 }} />
-                                )
+                                startAdornment: <Email color="action" sx={{ mr: 1 }} />,
+                                readOnly: true
                             }}
                             sx={{ height: 40 }}
                             value={formik.values.email}
-                            onChange={formik.handleChange}
-                            onBlur={formik.handleBlur}
-                            error={formik.touched.email && Boolean(formik.errors.email)}
-                            helperText={formik.touched.email && formik.errors.email}
+                        // No onChange or onBlur needed since it's read-only
                         />
-                        <Button
+                        {/* <Button
                             variant="contained"
                             size="small"
                             onClick={() => setOtpSent(true)}
@@ -263,11 +415,11 @@ const PersonalDetails = () => {
                             }}
                         >
                             Send OTP
-                        </Button>
+                        </Button> */}
                     </Box>
                 </Grid>
 
-                <Grid size={{ xs: 12, sm: 6 }}>
+                {/* <Grid size={{ xs: 12, sm: 6 }}>
                     <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                         <TextField
                             fullWidth
@@ -302,9 +454,9 @@ const PersonalDetails = () => {
                             OTP has been sent to your email.
                         </Typography>
                     )}
-                </Grid>
+                </Grid> */}
 
-                <Grid size={{ xs: 12, sm: 6 }}>
+                <Grid size={{ xs: 12, sm: 4 }}>
                     <TextField
                         fullWidth
                         name="mobileNumber"
@@ -325,7 +477,7 @@ const PersonalDetails = () => {
                     />
                 </Grid>
 
-                <Grid size={{ xs: 12, sm: 6 }}>
+                <Grid size={{ xs: 12, sm: 4 }}>
                     <TextField
                         fullWidth
                         name="whatsappNumber"
@@ -357,13 +509,11 @@ const PersonalDetails = () => {
                         variant="outlined"
                         size="small"
                         InputProps={{
-                            startAdornment: (
-                                <CalendarToday color="action" sx={{ mr: 1 }} />
-                            )
+                            startAdornment: <CalendarToday color="action" sx={{ mr: 1 }} />,
+                            readOnly: true  // Make the field read-only
                         }}
                         value={formik.values.dob}
-                        onChange={formik.handleChange}
-                        onBlur={formik.handleBlur}
+                        // Remove onChange and onBlur handlers since it's read-only
                         error={formik.touched.dob && Boolean(formik.errors.dob)}
                         helperText={formik.touched.dob && formik.errors.dob}
                     />
@@ -402,6 +552,25 @@ const PersonalDetails = () => {
                         helperText={formik.touched.nationality && formik.errors.nationality}
                     >
                         {nationalities.map((option) => (
+                            <MenuItem key={option} value={option}>{option}</MenuItem>
+                        ))}
+                    </TextField>
+                </Grid>
+                <Grid size={{ xs: 12, sm: 4 }}>
+                    <TextField
+                        select
+                        fullWidth
+                        name="maritalStatus"
+                        label="Marital Status *"
+                        variant="outlined"
+                        size="small"
+                        value={formik.values.maritalStatus}
+                        onChange={formik.handleChange}
+                        onBlur={formik.handleBlur}
+                        error={formik.touched.maritalStatus && Boolean(formik.errors.maritalStatus)}
+                        helperText={formik.touched.maritalStatus && formik.errors.maritalStatus}
+                    >
+                        {maritalStatus.map((option) => (
                             <MenuItem key={option} value={option}>{option}</MenuItem>
                         ))}
                     </TextField>

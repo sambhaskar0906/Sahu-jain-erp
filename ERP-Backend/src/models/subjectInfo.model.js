@@ -1,18 +1,23 @@
 import mongoose from "mongoose";
 const subjectsInfoSchema = new mongoose.Schema({
-    minorSubject:{
-        type:[String]
+    minorSubject: {
+        type: [String]
     },
-    majorSubject:{
-        type:[String]
+    majorSubject: {
+        type: [String]
     },
     applicationId: {
-    type: String,
-    required: true,
+        type: String,
+        required: true,
     },
     userId: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: "PersonalInfo",
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "PersonalInfo",
     },
-},{timestamps:true})
-export const Subjects = mongoose.model("Subjects",subjectsInfoSchema)
+    semester: {
+        type: String,
+        required: true,
+        enum: ['First Semester', 'Third Semester', 'Fifth Semester']
+    }
+}, { timestamps: true })
+export const Subjects = mongoose.model("Subjects", subjectsInfoSchema)
